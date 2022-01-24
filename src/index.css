@@ -1,3 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.form-clicked {
+  @apply bg-green-600 text-green-50 border-0;
+}

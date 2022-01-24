@@ -7,12 +7,11 @@ import {
   orderBy,
   query,
   limit,
-  startAfter,
 } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import ListingItem from '../components/ListingItem';
 
-const Discounted = () => {
+const Type = () => {
   const [listings, setListings] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -24,7 +23,7 @@ const Discounted = () => {
         const listingsRef = collection(db, 'listings');
         const q = query(
           listingsRef,
-          where('offer', '==', true),
+          where('type', '==', params.typeName),
           orderBy('timestamp', 'desc', limit(10))
         );
 
@@ -47,12 +46,14 @@ const Discounted = () => {
     };
 
     fetch();
-  }, []);
+  }, [params.typeName]);
 
   return (
-    <div className='px-6 py-4 grid gap-4'>
+    <div className='py-4 px-6 grid gap-4'>
       <header>
-        <h1 className='text-3xl font-bold'>On Discount 🔥</h1>
+        <h1 className='text-3xl font-bold'>
+          {params.typeName === 'kosan' ? 'Kos-Kosan' : 'Apartement'}
+        </h1>
       </header>
 
       <main className='flex flex-col'>
@@ -92,11 +93,11 @@ const Discounted = () => {
             </ul>
           </>
         ) : (
-          <p>There's no such a thing</p>
+          <p>There's nothing recently..</p>
         )}
       </main>
     </div>
   );
 };
 
-export default Discounted;
+export default Type;

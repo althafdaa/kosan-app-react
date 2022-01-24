@@ -34,7 +34,7 @@ const OAuth = () => {
 
   return (
     <div className='flex flex-col gap-2'>
-      <p className='text-center'>or sign in with Google</p>
+      <p className='text-center'>or sign in with</p>
       <button
         className='self-center rounded-full shadow-lg'
         onClick={oauthHandler}

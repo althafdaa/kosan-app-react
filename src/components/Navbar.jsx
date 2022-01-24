@@ -12,7 +12,7 @@ const Navbar = () => {
   };
 
   return (
-    <footer className='fixed bottom-0 inset-x-0'>
+    <footer className='mt-auto inset-x-0'>
       <nav className='bg-base-200 py-4'>
         <ul className='flex justify-around'>
           <li

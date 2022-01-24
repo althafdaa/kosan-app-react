@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { db } from '../firebase.config';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { getAuth, updateProfile } from 'firebase/auth';
 import { updateDoc, doc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
+import { FaArrowRight } from 'react-icons/fa';
 
 const Profile = () => {
   const auth = getAuth();
@@ -78,16 +79,20 @@ const Profile = () => {
           </div>
           <div>
             <form>
+              <label htmlFor='name'>Name</label>
               <input
                 onChange={onChangeHandler}
                 value={name}
-                className='py-2 px-4 w-full rounded-lg border-2 focus:outline-green-600'
+                className={`py-2 px-4 w-full rounded-lg ${
+                  personalDetails && 'border-2'
+                } font-bold focus:outline-green-600`}
                 disabled={!personalDetails}
                 type='text'
                 id='name'
               />
+              <label htmlFor='email'>Email</label>
               <input
-                className='py-2 px-4 w-full rounded-lg border-2 mt-2 focus:outline-green-600'
+                className='py-2 px-4 w-full rounded-lg font-bold mt-2 focus:outline-green-600'
                 disabled
                 type='text'
                 id='email'
@@ -96,6 +101,15 @@ const Profile = () => {
             </form>
           </div>
         </div>
+
+        <Link
+          className='flex justify-between items-center p-4 mt-4 shadow-lg  font-semibold'
+          to='/add-listing'
+        >
+          {' '}
+          <p>Punya property yang ingin disewakan ?</p>
+          <FaArrowRight className='text-green-600' />
+        </Link>
       </main>
     </div>
   );
