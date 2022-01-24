@@ -7,8 +7,10 @@ import {
   FaEnvelope,
   FaUnlockAlt,
 } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import OAuth from '../components/OAuth';
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -40,8 +42,12 @@ const SignIn = () => {
 
       if (userCredentials.user) {
         navigate('/');
+        toast.success(
+          `Login Succeed Welcome ${userCredentials.user.displayName}`
+        );
       }
     } catch (error) {
+      toast.error('Wrong email/password');
       console.log(error);
     }
   };
@@ -102,6 +108,8 @@ const SignIn = () => {
             </button>
           </div>
         </form>
+
+        <OAuth />
 
         <Link
           className='text-green-600 font-bold self-center mt-8'

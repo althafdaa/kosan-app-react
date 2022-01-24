@@ -16,6 +16,7 @@ import {
 } from 'firebase/auth';
 import { setDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase.config';
+import { toast } from 'react-toastify';
 
 const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -60,8 +61,12 @@ const SignUp = () => {
       // add the data to firestore
       await setDoc(doc(db, 'users', user.uid), dataCopy);
       navigate('/');
+      toast.success(
+        `Account Created Welcome ${userCredentials.user.displayName}`
+      );
     } catch (error) {
       console.log(error);
+      toast.error('Something went wrong');
     }
   };
 
@@ -123,13 +128,6 @@ const SignUp = () => {
               />
             )}
           </div>
-
-          <Link
-            className='font-bold text-green-600 self-end mr-4'
-            to='/forgot-password'
-          >
-            Forgot password ?
-          </Link>
 
           <div className='flex justify-between items-center mt-4'>
             <p className='font-bold text-xl'>Sign Up</p>
