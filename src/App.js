@@ -11,6 +11,7 @@ import SignIn from './Pages/SignIn';
 import Navbar from './components/Navbar';
 import Type from './Pages/Type';
 import AddListing from './Pages/AddListing';
+import SingleListing from './Pages/SingleListing';
 import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
@@ -28,6 +29,10 @@ function App() {
           <Route path='/sign-in' element={<SignIn />} />
           <Route path='/sign-up' element={<SignUp />} />
           <Route path='/forgot-password' element={<ForgotPassword />} />
+          <Route
+            path='/type/:typeName/:listingUID'
+            element={<SingleListing />}
+          />
         </Routes>
         {/* NAVBAR */}
         <Navbar />

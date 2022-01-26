@@ -1,12 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase.config';
 import { useNavigate, Link } from 'react-router-dom';
 import { getAuth, updateProfile } from 'firebase/auth';
-import { updateDoc, doc } from 'firebase/firestore';
+import {
+  updateDoc,
+  doc,
+  collection,
+  getDocs,
+  where,
+  orderBy,
+  query,
+  limit,
+} from 'firebase/firestore';
 import { toast } from 'react-toastify';
-import { FaArrowRight } from 'react-icons/fa';
+import { FaArrowDown, FaArrowRight, FaArrowUp } from 'react-icons/fa';
+import ListingItem from '../components/ListingItem';
 
 const Profile = () => {
+  const [listings, setListings] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [checkingListings, setCheckingListings] = useState(false);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const listingsRef = collection(db, 'listings');
+        const q = query(
+          listingsRef,
+          where('offer', '==', true),
+          orderBy('timestamp', 'desc', limit(10))
+        );
+
+        const querySnap = await getDocs(q);
+
+        const getListings = [];
+
+        querySnap.forEach((data) => {
+          return getListings.push({
+            id: data.id,
+            data: data.data(),
+          });
+        });
+
+        setListings(getListings);
+        setIsLoading(false);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetch();
+  }, []);
+
   const auth = getAuth();
   const navigate = useNavigate();
 
@@ -48,6 +94,10 @@ const Profile = () => {
       ...prev,
       [e.target.id]: e.target.value,
     }));
+  };
+
+  const checkListingsHandler = () => {
+    setCheckingListings((prev) => !prev);
   };
 
   return (
@@ -110,6 +160,59 @@ const Profile = () => {
           <p>Punya property yang ingin disewakan ?</p>
           <FaArrowRight className='text-green-600' />
         </Link>
+
+        <div className='flex flex-col mt-4 gap-4 shadow-lg p-4'>
+          <button
+            className='flex justify-between items-center font-semibold'
+            onClick={checkListingsHandler}
+          >
+            <p>{checkingListings ? 'Hide' : 'Show'} My Listings</p>
+            {checkingListings ? <FaArrowDown /> : <FaArrowUp />}
+          </button>
+
+          {checkingListings && (
+            <>
+              {isLoading ? (
+                <>
+                  <div className='alert alert-info mt-8'>
+                    <div className='flex-1'>
+                      <svg
+                        xmlns='http://www.w3.org/2000/svg'
+                        fill='none'
+                        viewBox='0 0 24 24'
+                        className='w-6 h-6 mx-2 stroke-current'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth='2'
+                          d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+                        ></path>
+                      </svg>
+                      <label>... Loading please wait a second</label>
+                    </div>
+                  </div>
+                </>
+              ) : listings && listings.length > 0 ? (
+                <>
+                  <ul>
+                    {listings.map((listing) => (
+                      <ListingItem
+                        listing={listing.data}
+                        id={listing.id}
+                        key={listing.id}
+                      >
+                        {listing.data.name}
+                      </ListingItem>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p>There's no such a thing</p>
+              )}
+            </>
+          )}
+        </div>
       </main>
     </div>
   );

@@ -1,29 +1,38 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { FaBell, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaBell } from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+} from 'firebase/storage';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase.config';
+import { v4 as uuidv4 } from 'uuid';
 
 const AddListing = () => {
-  const [enableGeolocation, setEnableGeolocation] = useState(true);
   const [formData, setFormData] = useState({
-    type: 'kosan',
-    name: '',
     bathrooms: false,
-    furnished: false,
-    address: '',
-    offer: true,
-    regularPrice: 0,
     discountedPrice: 0,
+    furnished: false,
     images: {},
+    location: '',
+    name: '',
+    normalPrice: 0,
+    offer: true,
     lat: 0,
     long: 0,
+    type: 'kosan',
+    parking: true,
   });
   const [isLoading, setIsLoading] = useState(false);
 
   const auth = getAuth();
   const navigate = useNavigate();
   const isMounted = useRef(true);
-
   useEffect(() => {
     if (isMounted) {
       onAuthStateChanged(auth, (user) => {
@@ -35,19 +44,13 @@ const AddListing = () => {
     return () => {
       isMounted.current = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted]);
 
   const formHandler = (e) => {
     e.preventDefault();
-    let boolean = null;
 
-    if (e.target.value === 'true') {
-      boolean = true;
-    }
-    if (e.target.value === 'false') {
-      boolean = false;
-    }
-
+    // jika targetnya file
     if (e.target.files) {
       setFormData((prev) => ({
         ...prev,
@@ -56,16 +59,115 @@ const AddListing = () => {
     }
 
     if (!e.target.files) {
-      setFormData((prev) => ({
-        ...prev,
-        [e.target.id]: boolean ?? e.target.value,
-      }));
+      if (e.target.value === 'true') {
+        setFormData((prev) => ({
+          ...prev,
+          [e.target.id]: true,
+        }));
+      }
+      if (e.target.value === 'false') {
+        setFormData((prev) => ({
+          ...prev,
+          [e.target.id]: false,
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          [e.target.id]: e.target.value,
+        }));
+      }
     }
   };
 
-  const listingSubmitHandler = (e) => {
+  const listingSubmitHandler = async (e) => {
     e.preventDefault();
-    console.log(formData);
+    setIsLoading(true);
+    let geolocation = {};
+
+    // form validation
+    if (formData.discountedPrice >= formData.normalPrice) {
+      setIsLoading(false);
+      toast.error('Harga diskonnya lebih tinggi dari harga normal tuh!');
+      return;
+    }
+    if (formData.images.length > 6) {
+      setIsLoading(false);
+      toast.error('Gambar yang diupload maksimal 6 ya!');
+      return;
+    }
+
+    // UPLOADING IMAGE START
+    const storeImage = async (img) => {
+      return new Promise((resolve, reject) => {
+        const storage = getStorage();
+        const fileName = `${auth.currentUser.uid}-${img.name}-${uuidv4()}`;
+
+        const storageRef = ref(storage, 'images/' + fileName);
+
+        const uploadTask = uploadBytesResumable(storageRef, img);
+
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress =
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log(`Upload is ${progress}% done`);
+            switch (snapshot.state) {
+              case 'paused':
+                console.log('Upload is paused');
+                break;
+              case 'running':
+                console.log('Upload is running');
+                break;
+              default:
+                break;
+            }
+          },
+          (error) => {
+            reject(error);
+          },
+          () => {
+            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+              resolve(downloadURL);
+            });
+          }
+        );
+      });
+    };
+
+    const imageUrls = await Promise.all(
+      [...formData.images].map((image) => storeImage(image))
+    ).catch(() => {
+      setIsLoading(false);
+      toast.error('Uploading image failed');
+      return;
+    });
+    // UPLOADING IMAGE END
+
+    geolocation.lat = formData.lat;
+    geolocation.long = formData.long;
+
+    // COPYING STATE || FINAL STATE
+    const formDataCopy = {
+      ...formData,
+      imageUrls,
+      geolocation,
+      timestamp: serverTimestamp(),
+    };
+
+    // CLEANING UP DATA
+    delete formDataCopy.images;
+    delete formDataCopy.lat;
+    delete formDataCopy.long;
+
+    console.log(formDataCopy);
+
+    // ADDING TO FIRESTORE
+    const docRef = await addDoc(collection(db, 'listings'), formDataCopy);
+    setIsLoading(false);
+    toast.success('Listing saved');
+    navigate(`/type/${formDataCopy.type}/${docRef.id}`);
+    // navigate('/profile');
   };
 
   return (
@@ -94,6 +196,7 @@ const AddListing = () => {
               id='type'
               type='button'
               onClick={formHandler}
+              disabled={isLoading}
             >
               Kosan
             </button>
@@ -105,6 +208,7 @@ const AddListing = () => {
               id='type'
               type='button'
               onClick={formHandler}
+              disabled={isLoading}
             >
               Apartemen
             </button>
@@ -123,75 +227,85 @@ const AddListing = () => {
             maxLength='32'
             minLength='10'
             required
+            disabled={isLoading}
           />
-          <div className='mt-2'>
-            <label className='font-semibold' htmlFor='name'>
+          <div className='mt-2 flex items-center gap-4'>
+            <label className='font-semibold' htmlFor='offer'>
               Kamar Mandi Dalam
             </label>
-            <button
-              className={`ml-2 rounded-lg text-black border-2 shadow-xs p-2 font-semibold hover:bg-green-600 hover:text-green-50 ${
-                formData.bathrooms && 'form-clicked'
-              }`}
-              value={true}
-              type='button'
-              id='bathrooms'
-              onClick={formHandler}
-            >
-              <FaCheck />
-            </button>
-            <button
-              className={`ml-2 rounded-lg text-black border-2 shadow-xs p-2 font-semibold hover:bg-green-600 hover:text-green-50 ${
-                !formData.bathrooms && 'form-clicked'
-              }`}
-              value={false}
-              type='button'
-              id='bathrooms'
-              onClick={formHandler}
-            >
-              <FaTimes />
-            </button>
+            <div className='flex gap-4 mb-2'>
+              <button
+                className={`rounded-lg text-black border-2 shadow-xs px-4 py-2 font-semibold hover:bg-green-600 hover:text-green-50 ${
+                  formData.bathrooms && 'form-clicked'
+                }`}
+                value={true}
+                type='button'
+                id='bathrooms'
+                onClick={formHandler}
+                disabled={isLoading}
+              >
+                ✓
+              </button>
+              <button
+                className={`rounded-lg text-black border-2 shadow-xs px-4 py-2  font-semibold hover:bg-green-600 hover:text-green-50 ${
+                  !formData.bathrooms && 'form-clicked'
+                }`}
+                value={false}
+                type='button'
+                id='bathrooms'
+                onClick={formHandler}
+                disabled={isLoading}
+              >
+                X
+              </button>
+            </div>
           </div>
 
-          <div className='mt-2'>
+          <div className='mt-2 flex items-center gap-4'>
             <label className='font-semibold' htmlFor='furnished'>
               Fully Furnished
             </label>
-            <button
-              className={`ml-2 rounded-lg text-black border-2 shadow-xs p-2 font-semibold hover:bg-green-600 hover:text-green-50 ${
-                formData.furnished && 'form-clicked'
-              }`}
-              value={true}
-              type='button'
-              id='furnished'
-              onClick={formHandler}
-            >
-              <FaCheck />
-            </button>
-            <button
-              className={`ml-2 mb-2 rounded-lg text-black border-2 shadow-xs p-2 font-semibold hover:bg-green-600 hover:text-green-50 ${
-                !formData.furnished && 'form-clicked'
-              }`}
-              value={false}
-              type='button'
-              id='furnished'
-              onClick={formHandler}
-            >
-              <FaTimes />
-            </button>
+            <div className='flex gap-4 mb-2'>
+              <button
+                className={`rounded-lg text-black border-2 shadow-xs px-4 py-2 font-semibold hover:bg-green-600 hover:text-green-50 ${
+                  formData.furnished && 'form-clicked'
+                }`}
+                value={true}
+                type='button'
+                id='furnished'
+                onClick={formHandler}
+                disabled={isLoading}
+              >
+                ✓
+              </button>
+              <button
+                className={`rounded-lg text-black border-2 shadow-xs px-4 py-2  font-semibold hover:bg-green-600 hover:text-green-50 ${
+                  !formData.furnished && 'form-clicked'
+                }`}
+                value={false}
+                type='button'
+                id='furnished'
+                onClick={formHandler}
+                disabled={isLoading}
+              >
+                X
+              </button>
+            </div>
           </div>
 
-          <label className='font-semibold' htmlFor='address'>
+          <label className='font-semibold' htmlFor='location'>
             Alamat Hunian
           </label>
           <input
             className='rounded-md p-2 h-16 border-2 outline-2 focus:outline-green-600 '
             placeholder='ex: Jalan Terapi IA'
             type='text'
-            id='address'
-            value={formData.address}
+            id='location'
+            value={formData.location}
             onChange={formHandler}
             minLength='10'
             required
+            disabled={isLoading}
           />
 
           <div className='flex gap-4 mt-4'>
@@ -207,6 +321,7 @@ const AddListing = () => {
                 value={formData.lat}
                 onChange={formHandler}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className='flex flex-col'>
@@ -221,10 +336,18 @@ const AddListing = () => {
                 value={formData.long}
                 onChange={formHandler}
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
-
+          <a
+            className='text-sm'
+            href='https://blogsecond.com/2018/09/mendapatkan-latitude-dan-longitude-gmaps/'
+            target='_blank'
+            rel='noreferrer'
+          >
+            Cara mendapatkan nilai latitude dan longitude ?
+          </a>
           <div className='mt-2'>
             <label className='font-semibold' htmlFor='offer'>
               Special Discount
@@ -238,6 +361,7 @@ const AddListing = () => {
                 type='button'
                 id='offer'
                 onClick={formHandler}
+                disabled={isLoading}
               >
                 Yes
               </button>
@@ -249,6 +373,7 @@ const AddListing = () => {
                 type='button'
                 id='offer'
                 onClick={formHandler}
+                disabled={isLoading}
               >
                 No
               </button>
@@ -256,7 +381,7 @@ const AddListing = () => {
           </div>
 
           <div className='mt-2 flex gap-8 items-center'>
-            <label className='font-semibold' htmlFor='regularPrice'>
+            <label className='font-semibold' htmlFor='normalPrice'>
               Harga Normal
             </label>
             <div className='flex items-center gap-2'>
@@ -265,10 +390,11 @@ const AddListing = () => {
                 className='rounded-md p-2 border-2 outline-2 focus:outline-green-600'
                 defaultValue='0'
                 type='number'
-                id='regularPrice'
-                value={formData.regularPrice}
+                id='normalPrice'
+                value={formData.normalPrice}
                 onChange={formHandler}
                 required
+                disabled={isLoading}
               />
               <p className='font-semibold'>/ bulan</p>
             </div>
@@ -279,7 +405,6 @@ const AddListing = () => {
                 Harga Diskon 🔥
               </label>
               <div className='flex items-center gap-2'>
-                {' '}
                 <p>Rp</p>
                 <input
                   className='rounded-md p-2 border-2 outline-2 focus:outline-green-600'
@@ -289,6 +414,7 @@ const AddListing = () => {
                   value={formData.discountedPrice}
                   onChange={formHandler}
                   required
+                  disabled={isLoading}
                 />
                 <p className='font-semibold'>/ bulan</p>
               </div>
@@ -310,12 +436,14 @@ const AddListing = () => {
               accept='.jpg,.png,.jpeg'
               multiple
               required
+              disabled={isLoading}
             />
           </div>
 
           <button
             className='mt-6 p-2 w-3/6 self-center bg-green-600 text-green-50 font-semibold rounded-lg shadow-md hover:bg-green-700 active:scale-95'
             type='submit'
+            disabled={isLoading}
           >
             Buat Iklan
           </button>
