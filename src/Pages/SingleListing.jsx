@@ -1,24 +1,23 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { db } from '../firebase.config';
-import SwiperCore, { Navigation, Pagination, Scrollbar, A11y } from 'swiper';
+import { Navigation, Pagination, Scrollbar, A11y } from 'swiper';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
-
+import 'swiper/css/bundle';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
-import { getAuth } from 'firebase/auth';
-import { collection, getDoc, doc } from 'firebase/firestore';
+import { getDoc, doc } from 'firebase/firestore';
 import { FaArrowLeft, FaShareAlt } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-SwiperCore.use([Navigation, Pagination, Scrollbar, A11y]);
+import LoadingScreen from '../components/LoadingScreen';
 
 const SingleListing = () => {
   const [listing, setListing] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [shareCopied, setShareCopied] = useState(null);
 
-  const auth = getAuth();
-  const navigate = useNavigate();
   const params = useParams();
   const isMounted = useRef(true);
 
@@ -53,7 +52,7 @@ const SingleListing = () => {
   };
 
   if (isLoading) {
-    return <h1>...Loading</h1>;
+    return <LoadingScreen />;
   }
 
   return (
@@ -63,6 +62,7 @@ const SingleListing = () => {
           className='h-full'
           slidesPerView={1}
           pagination={{ clickable: true }}
+          modules={[Navigation, Pagination, Scrollbar, A11y]}
         >
           {listing.imageUrls.map((url, index) => (
             <SwiperSlide key={index}>
@@ -110,7 +110,12 @@ const SingleListing = () => {
 
         <div className='border-b-2 pb-2 border-gray-200'>
           {listing.offer && (
-            <p className='text-xs bg-green-600 text-green-50 rounded-md py-1 px-2'>
+            <p className='text-xs bg-green-600 text-green-50 font-semibold rounded-md py-1 px-2'>
+              <span className='line-through mr-4'>
+                {listing.normalPrice
+                  .toString()
+                  .replace(/(\d)(?=(\d\d\d)+(?!\d))/g, '$1.')}
+              </span>
               Hemat Rp
               {(listing.normalPrice - listing.discountedPrice)
                 .toString()

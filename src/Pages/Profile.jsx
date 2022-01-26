@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { getAuth, updateProfile } from 'firebase/auth';
 import {
   updateDoc,
+  deleteDoc,
   doc,
   collection,
   getDocs,
@@ -19,8 +20,9 @@ import ListingItem from '../components/ListingItem';
 const Profile = () => {
   const [listings, setListings] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
   const [checkingListings, setCheckingListings] = useState(false);
+
+  const auth = getAuth();
 
   useEffect(() => {
     const fetch = async () => {
@@ -28,8 +30,9 @@ const Profile = () => {
         const listingsRef = collection(db, 'listings');
         const q = query(
           listingsRef,
-          where('offer', '==', true),
-          orderBy('timestamp', 'desc', limit(10))
+          where('userRef', '==', auth.currentUser.uid),
+          orderBy('timestamp', 'desc'),
+          limit(10)
         );
 
         const querySnap = await getDocs(q);
@@ -51,9 +54,8 @@ const Profile = () => {
     };
 
     fetch();
-  }, []);
+  }, [auth.currentUser.uid]);
 
-  const auth = getAuth();
   const navigate = useNavigate();
 
   const [personalDetails, setPersonalDetails] = useState(false);
@@ -100,6 +102,16 @@ const Profile = () => {
     setCheckingListings((prev) => !prev);
   };
 
+  const deleteHandler = (id, name) => {
+    if (window.confirm(`Apa kamu yakin ingin menghapus iklan ${name} ?`)) {
+      deleteDoc(doc(db, 'listings', id));
+      const deletedListings = listings.filter((listing) => listing.id !== id);
+      setListings(deletedListings);
+      toast.success('Listings Deleted');
+    }
+  };
+
+  const editHandler = (id) => navigate(`/profile/edit-listing/${id}`);
   return (
     <div className='px-6 py-4 flex flex-col gap-8'>
       <header>
@@ -154,20 +166,19 @@ const Profile = () => {
 
         <Link
           className='flex justify-between items-center p-4 mt-4 shadow-lg  font-semibold'
-          to='/add-listing'
+          to='/profile/add-listing'
         >
-          {' '}
           <p>Punya property yang ingin disewakan ?</p>
           <FaArrowRight className='text-green-600' />
         </Link>
 
         <div className='flex flex-col mt-4 gap-4 shadow-lg p-4'>
           <button
-            className='flex justify-between items-center font-semibold'
+            className='flex justify-between items-center font-semibold hover:text-green-600'
             onClick={checkListingsHandler}
           >
-            <p>{checkingListings ? 'Hide' : 'Show'} My Listings</p>
-            {checkingListings ? <FaArrowDown /> : <FaArrowUp />}
+            <p>{checkingListings ? 'Sembunyikan' : 'Tunjukkan'} Iklan Saya</p>
+            {checkingListings ? <FaArrowUp /> : <FaArrowDown />}
           </button>
 
           {checkingListings && (
@@ -189,7 +200,7 @@ const Profile = () => {
                           d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
                         ></path>
                       </svg>
-                      <label>... Loading please wait a second</label>
+                      <label>Tunggu sebentar ya..!</label>
                     </div>
                   </div>
                 </>
@@ -201,6 +212,8 @@ const Profile = () => {
                         listing={listing.data}
                         id={listing.id}
                         key={listing.id}
+                        deleteHandler={deleteHandler}
+                        editHandler={editHandler}
                       >
                         {listing.data.name}
                       </ListingItem>

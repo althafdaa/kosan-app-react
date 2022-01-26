@@ -1,14 +1,26 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaBed, FaShower, FaTimesCircle } from 'react-icons/fa';
+import { FaBed, FaEdit, FaShower, FaTimesCircle } from 'react-icons/fa';
 
-const ListingItem = ({ listing, id, deleteHandler }) => {
+const ListingItem = ({ listing, id, deleteHandler, editHandler }) => {
   return (
     <li className='border-b-2 mb-4 pb-4 relative object-contain'>
       {deleteHandler && (
-        <button className=' absolute -top-4 right-0' onClick={deleteHandler}>
-          <FaTimesCircle className='text-red-800 hover:text-red-900' />
-        </button>
+        <>
+          {' '}
+          <button
+            className=' absolute -top-4 right-0 z-10 text-red-600 hover:text-red-900'
+            onClick={() => deleteHandler(id, listing.name)}
+          >
+            <FaTimesCircle size={16} />
+          </button>
+          <button
+            className=' absolute -top-4 right-6 z-10 text-gree-600 hover:text-green-900'
+            onClick={() => editHandler(id)}
+          >
+            <FaEdit />
+          </button>
+        </>
       )}
 
       <Link

@@ -55,7 +55,7 @@ const SignIn = () => {
     <>
       <div className='px-6 py-4 flex flex-col'>
         <header>
-          <p className='text-3xl font-bold'>Log In To Your Account</p>
+          <p className='text-3xl font-bold'>Masuk ke Kosan App</p>
         </header>
 
         <form
@@ -112,10 +112,10 @@ const SignIn = () => {
         <OAuth />
 
         <Link
-          className='text-green-600 font-bold self-center mt-8'
+          className='text-green-600 font-bold text-sm self-center mt-8'
           to='/sign-up'
         >
-          Don't have an account yet ? Join us!
+          Belum punya akun Kosan App ? Daftar Sekarang
         </Link>
       </div>
     </>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FaBell } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import {
@@ -9,11 +9,12 @@ import {
   uploadBytesResumable,
   getDownloadURL,
 } from 'firebase/storage';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import { v4 as uuidv4 } from 'uuid';
+import LoadingScreen from '../components/LoadingScreen';
 
-const AddListing = () => {
+const EditListing = () => {
   const [formData, setFormData] = useState({
     bathrooms: false,
     discountedPrice: 0,
@@ -28,11 +29,37 @@ const AddListing = () => {
     type: 'kosan',
     parking: true,
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [editingListing, setEditingListing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const auth = getAuth();
   const navigate = useNavigate();
   const isMounted = useRef(true);
+  const params = useParams();
+
+  // fetch based on UID for UPDATE/EDIT
+  useEffect(() => {
+    setIsLoading(true);
+    const fetchEdit = async () => {
+      const docRef = doc(db, 'listings', params.listingUID);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        setEditingListing(docSnap.data());
+        setFormData({
+          ...docSnap.data(),
+          geolocation: {
+            lat: docSnap.data().geolocation.lat,
+            long: docSnap.data().geolocation.long,
+          },
+        });
+        setIsLoading(false);
+      }
+    };
+    fetchEdit();
+  }, [navigate, params.listingUID]);
+
+  // authenticantion
   useEffect(() => {
     if (isMounted) {
       onAuthStateChanged(auth, (user) => {
@@ -82,7 +109,6 @@ const AddListing = () => {
   const listingSubmitHandler = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    let geolocation = {};
 
     // form validation
     if (formData.discountedPrice >= formData.normalPrice) {
@@ -144,49 +170,45 @@ const AddListing = () => {
     });
     // UPLOADING IMAGE END
 
-    geolocation.lat = formData.lat;
-    geolocation.long = formData.long;
+    // geolocation.lat = formData.lat;
+    // geolocation.long = formData.long;
 
     // COPYING STATE || FINAL STATE
     const formDataCopy = {
       ...formData,
       imageUrls,
-      geolocation,
       timestamp: serverTimestamp(),
     };
 
     // CLEANING UP DATA
     delete formDataCopy.images;
-    delete formDataCopy.lat;
-    delete formDataCopy.long;
 
-    console.log(formDataCopy);
-
-    // ADDING TO FIRESTORE
-    const docRef = await addDoc(collection(db, 'listings'), formDataCopy);
-    setIsLoading(false);
-    toast.success('Listing saved');
+    // UPDATEIN TO FIRESTORE
+    const docRef = doc(db, 'listings', params.listingUID);
+    await updateDoc(docRef, formDataCopy);
+    toast.success('Iklan berhasil disimpan!');
     navigate(`/type/${formDataCopy.type}/${docRef.id}`);
-    // navigate('/profile');
   };
 
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
   return (
     <div className='py-6 px-4 flex flex-col gap-4 mb-34'>
-      <header className='w-full'>
-        <h1 className='text-3xl font-bold object-contain'>Buat Iklan</h1>
+      <header>
+        <h1 className='text-3xl font-bold'>
+          Update Iklan {editingListing.name}
+        </h1>
       </header>
       {isLoading && (
         <div className='alert alert-warning'>
           <FaBell />
-          <label>Lagi proses posting nih, tunggu ya!</label>
+          <label>Tunggu sebentar ya...!</label>
         </div>
       )}
 
-      <main className='w-full'>
-        <form
-          className='flex flex-col w-full object-contain'
-          onSubmit={listingSubmitHandler}
-        >
+      <main>
+        <form className='flex flex-col' onSubmit={listingSubmitHandler}>
           <label className='font-semibold' htmlFor='type'>
             Jenis Hunian
           </label>
@@ -195,7 +217,7 @@ const AddListing = () => {
               className={`rounded-lg text-black border-2 shadow-xs px-8 py-2 font-semibold hover:bg-green-600 hover:text-green-50 ${
                 formData.type === 'kosan' && 'form-clicked'
               }`}
-              value='kosan'
+              value={formData.type}
               id='type'
               type='button'
               onClick={formHandler}
@@ -205,9 +227,9 @@ const AddListing = () => {
             </button>
             <button
               className={`rounded-lg text-black border-2 shadow-xs px-4 py-2  font-semibold hover:bg-green-600 hover:text-green-50 ${
-                formData.type === 'apart' && 'form-clicked'
+                formData.type === 'apartement' && 'form-clicked'
               }`}
-              value='apartement'
+              value={formData.type}
               id='type'
               type='button'
               onClick={formHandler}
@@ -321,7 +343,7 @@ const AddListing = () => {
                 defaultValue='0'
                 type='number'
                 id='lat'
-                value={formData.lat}
+                value={formData.geolocation.lat}
                 onChange={formHandler}
                 required
                 disabled={isLoading}
@@ -336,7 +358,7 @@ const AddListing = () => {
                 defaultValue='0'
                 type='number'
                 id='long'
-                value={formData.long}
+                value={formData.geolocation.long}
                 onChange={formHandler}
                 required
                 disabled={isLoading}
@@ -344,7 +366,7 @@ const AddListing = () => {
             </div>
           </div>
           <a
-            className='text-sm'
+            className='text-sm hover:text-blue-300'
             href='https://blogsecond.com/2018/09/mendapatkan-latitude-dan-longitude-gmaps/'
             target='_blank'
             rel='noreferrer'
@@ -448,7 +470,7 @@ const AddListing = () => {
             type='submit'
             disabled={isLoading}
           >
-            Buat Iklan
+            Update Iklan
           </button>
         </form>
       </main>
@@ -456,4 +478,4 @@ const AddListing = () => {
   );
 };
 
-export default AddListing;
+export default EditListing;

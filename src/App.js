@@ -13,6 +13,7 @@ import Type from './Pages/Type';
 import AddListing from './Pages/AddListing';
 import SingleListing from './Pages/SingleListing';
 import 'react-toastify/dist/ReactToastify.css';
+import EditListing from './Pages/EditListing';
 
 function App() {
   return (
@@ -25,13 +26,17 @@ function App() {
           <Route path='/profile' element={<PrivateRoute />}>
             <Route path='/profile' element={<Profile />} />
           </Route>
-          <Route path='/add-listing' element={<AddListing />} />
+          <Route path='/profile/add-listing' element={<AddListing />} />
           <Route path='/sign-in' element={<SignIn />} />
           <Route path='/sign-up' element={<SignUp />} />
           <Route path='/forgot-password' element={<ForgotPassword />} />
           <Route
             path='/type/:typeName/:listingUID'
             element={<SingleListing />}
+          />
+          <Route
+            path='/profile/edit-listing/:listingUID'
+            element={<EditListing />}
           />
         </Routes>
         {/* NAVBAR */}
