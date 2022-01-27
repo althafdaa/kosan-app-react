@@ -6,7 +6,6 @@ import {
   orderBy,
   query,
   limit,
-  startAfter,
 } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import ListingItem from '../components/ListingItem';

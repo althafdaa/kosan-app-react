@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { db } from '../firebase.config';
 import { collection, query, getDocs, limit, orderBy } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,6 @@ const LatestListing = () => {
   const [onHover, setOnHover] = useState(false);
   const [latestListing, setLatestListing] = useState({});
   const navigate = useNavigate();
-  // const isMounted = useRef(true);
 
   useEffect(() => {
     setLoadingListing(true);
