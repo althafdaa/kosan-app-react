@@ -4,10 +4,13 @@ import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { FaEnvelope, FaCheckSquare } from 'react-icons/fa';
 import { ReactComponent as ForgotPass } from '../assets/forget-password.svg';
 import { ReactComponent as ForgotPassSent } from '../assets/forget-password-sent.svg';
+import { useDispatch, useSelector } from 'react-redux';
+import { isSubmitted } from '../store/uiSlice';
 
 const ForgotPassword = () => {
+  const dispatch = useDispatch();
+  const formSubmitted = useSelector((state) => state.ui.isSubmitted);
   const [email, setEmail] = useState('');
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const auth = getAuth();
 
   const emailOnchange = (e) => {
@@ -18,7 +21,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     try {
       await sendPasswordResetEmail(auth, email);
-      setIsSubmitted(true);
+      dispatch(isSubmitted());
     } catch (error) {
       console.log(error);
     }
@@ -29,7 +32,7 @@ const ForgotPassword = () => {
       <header>
         <h1 className='text-2xl font-bold'>Forgot Password</h1>
       </header>
-      {isSubmitted ? (
+      {formSubmitted ? (
         <div className='flex flex-col gap-4 items-center'>
           <ForgotPassSent height='240px' width='240px' />
           <div className='flex items-center'>

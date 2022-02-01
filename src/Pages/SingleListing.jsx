@@ -12,11 +12,15 @@ import { getDoc, doc } from 'firebase/firestore';
 import { FaArrowLeft, FaShareAlt } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import LoadingScreen from '../components/LoadingScreen';
+import { useSelector, useDispatch } from 'react-redux';
+import { shareCopied } from '../store/uiSlice';
 
 const SingleListing = () => {
+  const dispatch = useDispatch();
+  const linkCopied = useSelector((state) => state.ui.isCopied);
+
   const [listing, setListing] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [shareCopied, setShareCopied] = useState(null);
 
   const params = useParams();
   const isMounted = useRef(true);
@@ -41,9 +45,9 @@ const SingleListing = () => {
 
   const shareHandler = () => {
     navigator.clipboard.writeText(window.location.href);
-    setShareCopied(true);
+    dispatch(shareCopied());
     setTimeout(() => {
-      setShareCopied(false);
+      dispatch(shareCopied());
     }, 2000);
   };
 
@@ -77,7 +81,7 @@ const SingleListing = () => {
               >
                 <FaShareAlt className='text-white' />
               </div>
-              {shareCopied && (
+              {linkCopied && (
                 <p className='bg-slate-900 text-white absolute top-20 right-5 text-xs shadow-md rounded-lg px-2 py-1 inline-block'>
                   Link Copied
                 </p>
