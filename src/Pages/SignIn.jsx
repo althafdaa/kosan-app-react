@@ -7,24 +7,26 @@ import {
   FaEnvelope,
   FaUnlockAlt,
 } from 'react-icons/fa';
-import { toast } from 'react-toastify';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import OAuth from '../components/OAuth';
 import { useDispatch, useSelector } from 'react-redux';
 import { showPassword } from '../store/uiSlice';
+import { logInSubmitHandler } from '../store/formAction';
 
 const SignIn = () => {
   const dispatch = useDispatch();
   const togglePassword = useSelector((state) => state.ui.showPassword);
+  const loginSuccess = useSelector((state) => state.form.isLogin);
+
+  const auth = getAuth();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const navigate = useNavigate();
-  const { email, password } = formData;
 
-  const formInputHandler = (e) => {
+  const formInputOnChange = (e) => {
     setFormData((prev) => ({
       ...prev,
       [e.target.id]: e.target.value,
@@ -33,27 +35,19 @@ const SignIn = () => {
 
   const loginSubmit = async (e) => {
     e.preventDefault();
-
-    const auth = getAuth();
-
-    try {
-      const userCredentials = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
-      if (userCredentials.user) {
-        navigate('/');
-        toast.success(
-          `Login Succeed Welcome ${userCredentials.user.displayName}`
-        );
-      }
-    } catch (error) {
-      toast.error('Wrong email/password');
-      console.log(error);
-    }
+    dispatch(
+      logInSubmitHandler({
+        auth: auth,
+        email: formData.email,
+        password: formData.password,
+      })
+    );
   };
+
+  if (loginSuccess) {
+    navigate('/');
+  }
+
   return (
     <>
       <div className='px-6 py-4 flex flex-col'>
@@ -72,7 +66,7 @@ const SignIn = () => {
               type='email'
               placeholder='Email'
               id='email'
-              onChange={formInputHandler}
+              onChange={formInputOnChange}
             />
           </div>
           <div className='relative flex items-center gap-4'>
@@ -82,7 +76,7 @@ const SignIn = () => {
               type={togglePassword ? 'text' : 'password'}
               placeholder='Password'
               id='password'
-              onChange={formInputHandler}
+              onChange={formInputOnChange}
             />
             {togglePassword ? (
               <FaEye

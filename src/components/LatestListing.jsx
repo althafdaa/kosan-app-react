@@ -1,32 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../firebase.config';
-import { collection, query, getDocs, limit, orderBy } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { getLatestListing } from '../store/listingsAction';
 
 const LatestListing = () => {
-  const [loadingListing, setLoadingListing] = useState(true);
-  const [onHover, setOnHover] = useState(false);
-  const [latestListing, setLatestListing] = useState({});
-  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const loadingListing = useSelector((state) => state.listing.isLoadingLatest);
+  const latestListing = useSelector((state) => state.listing.latestListing);
 
   useEffect(() => {
-    setLoadingListing(true);
-    const fetchListing = async () => {
-      const collectionRef = collection(db, 'listings');
-      const q = query(collectionRef, orderBy('timestamp', 'desc'), limit(1));
-      const querySnap = await getDocs(q);
+    dispatch(getLatestListing());
+  }, [dispatch]);
 
-      querySnap.forEach((list) => {
-        setLatestListing({
-          ...list.data(),
-          id: list.id,
-        });
-      });
-
-      setLoadingListing(false);
-    };
-    fetchListing();
-  }, []);
+  const [onHover, setOnHover] = useState(false);
+  const navigate = useNavigate();
 
   return loadingListing ? (
     <>

@@ -1,52 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import {
-  collection,
-  getDocs,
-  where,
-  orderBy,
-  query,
-  limit,
-} from 'firebase/firestore';
-import { db } from '../firebase.config';
 import ListingItem from '../components/ListingItem';
+import { useDispatch, useSelector } from 'react-redux';
+import { getListingsData } from '../store/listingsAction';
 
 const Type = () => {
-  const [listings, setListings] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useDispatch();
+  const data = useSelector((state) => state.listing.listings);
+  const isLoading = useSelector((state) => state.listing.isLoadingListings);
 
   const params = useParams();
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const listingsRef = collection(db, 'listings');
-        const q = query(
-          listingsRef,
-          where('type', '==', params.typeName),
-          orderBy('timestamp', 'desc', limit(10))
-        );
-
-        const querySnap = await getDocs(q);
-
-        const getListings = [];
-
-        querySnap.forEach((data) => {
-          return getListings.push({
-            id: data.id,
-            data: data.data(),
-          });
-        });
-
-        setListings(getListings);
-        setIsLoading(false);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    fetch();
-  }, [params.typeName]);
+    dispatch(getListingsData(params.typeName));
+  }, [dispatch, params.typeName]);
 
   return (
     <div className='py-4 px-6 grid gap-4'>
@@ -78,10 +45,10 @@ const Type = () => {
               </div>
             </div>
           </>
-        ) : listings && listings.length > 0 ? (
+        ) : data && data.length > 0 ? (
           <>
             <ul>
-              {listings.map((listing) => (
+              {data.map((listing) => (
                 <ListingItem
                   listing={listing.data}
                   id={listing.id}

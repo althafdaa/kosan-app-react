@@ -3,17 +3,17 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { FaBell } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from 'firebase/storage';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase.config';
-import { v4 as uuidv4 } from 'uuid';
+
+import { addListingHandler } from '../store/addListingAction';
+import { useSelector, useDispatch } from 'react-redux';
+import { addListingLoading } from '../store/addListingSlice';
 
 const AddListing = () => {
+  const dispatch = useDispatch();
+  const isLoading = useSelector((state) => state.add.isLoading);
+  const isAdded = useSelector((state) => state.add.isAdded);
+  const uuid = useSelector((state) => state.add.uuid);
+
   const [formData, setFormData] = useState({
     bathrooms: false,
     discountedPrice: 0,
@@ -28,11 +28,11 @@ const AddListing = () => {
     type: 'kosan',
     parking: true,
   });
-  const [isLoading, setIsLoading] = useState(false);
 
   const auth = getAuth();
   const navigate = useNavigate();
   const isMounted = useRef(true);
+
   useEffect(() => {
     if (isMounted) {
       onAuthStateChanged(auth, (user) => {
@@ -81,94 +81,31 @@ const AddListing = () => {
 
   const listingSubmitHandler = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    let geolocation = {};
+
+    dispatch(addListingLoading(true));
 
     // form validation
     if (formData.discountedPrice >= formData.normalPrice) {
-      setIsLoading(false);
+      dispatch(addListingLoading(false));
       toast.error('Harga diskonnya lebih tinggi dari harga normal tuh!');
       return;
     }
     if (formData.images.length > 6) {
-      setIsLoading(false);
+      dispatch(addListingLoading(false));
       toast.error('Gambar yang diupload maksimal 6 ya!');
       return;
     }
 
-    // UPLOADING IMAGE START
-    const storeImage = async (img) => {
-      return new Promise((resolve, reject) => {
-        const storage = getStorage();
-        const fileName = `${auth.currentUser.uid}-${img.name}-${uuidv4()}`;
-
-        const storageRef = ref(storage, 'images/' + fileName);
-
-        const uploadTask = uploadBytesResumable(storageRef, img);
-
-        uploadTask.on(
-          'state_changed',
-          (snapshot) => {
-            const progress =
-              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log(`Upload is ${progress}% done`);
-            switch (snapshot.state) {
-              case 'paused':
-                console.log('Upload is paused');
-                break;
-              case 'running':
-                console.log('Upload is running');
-                break;
-              default:
-                break;
-            }
-          },
-          (error) => {
-            reject(error);
-          },
-          () => {
-            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-              resolve(downloadURL);
-            });
-          }
-        );
-      });
-    };
-
-    const imageUrls = await Promise.all(
-      [...formData.images].map((image) => storeImage(image))
-    ).catch(() => {
-      setIsLoading(false);
-      toast.error('Uploading image failed');
-      return;
-    });
-    // UPLOADING IMAGE END
-
-    geolocation.lat = formData.lat;
-    geolocation.long = formData.long;
-
-    // COPYING STATE || FINAL STATE
-    const formDataCopy = {
-      ...formData,
-      imageUrls,
-      geolocation,
-      timestamp: serverTimestamp(),
-    };
-
-    // CLEANING UP DATA
-    delete formDataCopy.images;
-    delete formDataCopy.lat;
-    delete formDataCopy.long;
-
-    console.log(formDataCopy);
-
-    // ADDING TO FIRESTORE
-    const docRef = await addDoc(collection(db, 'listings'), formDataCopy);
-    setIsLoading(false);
-    toast.success('Listing saved');
-    navigate(`/type/${formDataCopy.type}/${docRef.id}`);
-    // navigate('/profile');
+    dispatch(
+      addListingHandler({
+        ...formData,
+      })
+    );
   };
+
+  if (isAdded) {
+    navigate(`/type/${formData.type}/${uuid}`);
+  }
 
   return (
     <div className='py-6 px-4 flex flex-col gap-4 mb-34'>
@@ -318,7 +255,7 @@ const AddListing = () => {
               </label>
               <input
                 className='rounded-md p-2 border-2 outline-2 focus:outline-green-600 '
-                defaultValue='0'
+                placeholder='0'
                 type='number'
                 id='lat'
                 value={formData.lat}
@@ -333,7 +270,7 @@ const AddListing = () => {
               </label>
               <input
                 className='rounded-md p-2 border-2 outline-2 focus:outline-green-600 '
-                defaultValue='0'
+                placeholder='0'
                 type='number'
                 id='long'
                 value={formData.long}

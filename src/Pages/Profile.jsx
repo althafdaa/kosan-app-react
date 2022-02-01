@@ -1,65 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase.config';
 import { useNavigate, Link } from 'react-router-dom';
-import { getAuth, updateProfile } from 'firebase/auth';
-import {
-  updateDoc,
-  deleteDoc,
-  doc,
-  collection,
-  getDocs,
-  where,
-  orderBy,
-  query,
-  limit,
-} from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { deleteDoc, doc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import { FaArrowDown, FaArrowRight, FaArrowUp } from 'react-icons/fa';
 import ListingItem from '../components/ListingItem';
 import { useDispatch, useSelector } from 'react-redux';
 import { toggle, personalDetailsToggle } from '../store/uiSlice';
+import { getprofileListing } from '../store/listingsAction';
+import { profileListing } from '../store/listingSlice';
+import { changePersonalDetails } from '../store/formAction';
+import { createAccount, isLogin } from '../store/formSlice';
 
 const Profile = () => {
   const dispatch = useDispatch();
   const showListings = useSelector((state) => state.ui.showMyListings);
   const editPersonal = useSelector((state) => state.ui.personal);
-
-  const [listings, setListings] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const isLoading = useSelector((state) => state.listing.isLoadingProfile);
+  const listings = useSelector((state) => state.listing.profileListings);
 
   const auth = getAuth();
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const listingsRef = collection(db, 'listings');
-        const q = query(
-          listingsRef,
-          where('userRef', '==', auth.currentUser.uid),
-          orderBy('timestamp', 'desc'),
-          limit(10)
-        );
-
-        const querySnap = await getDocs(q);
-
-        const getListings = [];
-
-        querySnap.forEach((data) => {
-          return getListings.push({
-            id: data.id,
-            data: data.data(),
-          });
-        });
-
-        setListings(getListings);
-        setIsLoading(false);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    fetch();
-  }, [auth.currentUser.uid]);
+    dispatch(getprofileListing(auth.currentUser.uid));
+  }, [dispatch, auth.currentUser.uid]);
 
   const navigate = useNavigate();
 
@@ -71,28 +36,14 @@ const Profile = () => {
   const { name, email } = user;
 
   const logoutHandler = () => {
+    dispatch(isLogin(null));
+    dispatch(createAccount(null));
     auth.signOut();
     navigate('/');
   };
 
   const submitChangeHandler = async () => {
-    try {
-      if (auth.currentUser.displayName !== name) {
-        // update in firebase/auth
-        await updateProfile(auth.currentUser, {
-          displayName: name,
-        });
-
-        // update in firestore
-        const userRef = doc(db, 'users', auth.currentUser.uid);
-        await updateDoc(userRef, {
-          name,
-        });
-      }
-    } catch (error) {
-      console.log(error);
-      toast.error('Something went wrong');
-    }
+    dispatch(changePersonalDetails({ auth: auth, name: name }));
   };
 
   const onChangeHandler = (e) => {
@@ -104,19 +55,19 @@ const Profile = () => {
 
   const checkListingsHandler = () => {
     dispatch(toggle());
-    // setCheckingListings((prev) => !prev);
   };
 
   const deleteHandler = (id, name) => {
     if (window.confirm(`Apa kamu yakin ingin menghapus iklan ${name} ?`)) {
       deleteDoc(doc(db, 'listings', id));
       const deletedListings = listings.filter((listing) => listing.id !== id);
-      setListings(deletedListings);
+      dispatch(profileListing(deletedListings));
       toast.success('Listings Deleted');
     }
   };
 
   const editHandler = (id) => navigate(`/profile/edit-listing/${id}`);
+
   return (
     <div className='px-6 py-4 flex flex-col gap-8'>
       <header>
