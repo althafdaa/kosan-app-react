@@ -16,11 +16,16 @@ import {
 import { toast } from 'react-toastify';
 import { FaArrowDown, FaArrowRight, FaArrowUp } from 'react-icons/fa';
 import ListingItem from '../components/ListingItem';
+import { useDispatch, useSelector } from 'react-redux';
+import { toggle, personalDetailsToggle } from '../store/uiSlice';
 
 const Profile = () => {
+  const dispatch = useDispatch();
+  const showListings = useSelector((state) => state.ui.showMyListings);
+  const editPersonal = useSelector((state) => state.ui.personal);
+
   const [listings, setListings] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [checkingListings, setCheckingListings] = useState(false);
 
   const auth = getAuth();
 
@@ -58,7 +63,6 @@ const Profile = () => {
 
   const navigate = useNavigate();
 
-  const [personalDetails, setPersonalDetails] = useState(false);
   const [user, setUser] = useState({
     name: auth.currentUser.displayName,
     email: auth.currentUser.email,
@@ -99,7 +103,8 @@ const Profile = () => {
   };
 
   const checkListingsHandler = () => {
-    setCheckingListings((prev) => !prev);
+    dispatch(toggle());
+    // setCheckingListings((prev) => !prev);
   };
 
   const deleteHandler = (id, name) => {
@@ -132,11 +137,11 @@ const Profile = () => {
             <p
               className='cursor-pointer text-green-600 font-bold'
               onClick={() => {
-                personalDetails && submitChangeHandler();
-                setPersonalDetails((prev) => !prev);
+                editPersonal && submitChangeHandler();
+                dispatch(personalDetailsToggle());
               }}
             >
-              {personalDetails ? 'Done' : 'Edit'}
+              {editPersonal ? 'Done' : 'Edit'}
             </p>
           </div>
           <div>
@@ -146,9 +151,9 @@ const Profile = () => {
                 onChange={onChangeHandler}
                 value={name}
                 className={`py-2 px-4 w-full rounded-lg ${
-                  personalDetails && 'border-2'
+                  editPersonal && 'border-2'
                 } font-bold focus:outline-green-600`}
-                disabled={!personalDetails}
+                disabled={!editPersonal}
                 type='text'
                 id='name'
               />
@@ -177,11 +182,11 @@ const Profile = () => {
             className='flex justify-between items-center font-semibold hover:text-green-600'
             onClick={checkListingsHandler}
           >
-            <p>{checkingListings ? 'Sembunyikan' : 'Tunjukkan'} Iklan Saya</p>
-            {checkingListings ? <FaArrowUp /> : <FaArrowDown />}
+            <p>{showListings ? 'Sembunyikan' : 'Tunjukkan'} Iklan Saya</p>
+            {showListings ? <FaArrowUp /> : <FaArrowDown />}
           </button>
 
-          {checkingListings && (
+          {showListings && (
             <>
               {isLoading ? (
                 <>

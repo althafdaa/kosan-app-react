@@ -39,7 +39,7 @@ function App() {
             element={<EditListing />}
           />
         </Routes>
-        {/* NAVBAR */}
+
         <Navbar />
       </Router>
       <ToastContainer

@@ -17,9 +17,12 @@ import {
 import { setDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import { toast } from 'react-toastify';
+import { useSelector, useDispatch } from 'react-redux';
+import { showPassword } from '../store/uiSlice';
 
 const SignUp = () => {
-  const [showPassword, setShowPassword] = useState(false);
+  const dispatch = useDispatch();
+  const togglePassword = useSelector((state) => state.ui.showPassword);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -111,20 +114,20 @@ const SignUp = () => {
             <FaUnlockAlt />
             <input
               className='input w-full'
-              type={showPassword ? 'text' : 'password'}
+              type={togglePassword ? 'text' : 'password'}
               placeholder='Password'
               id='password'
               onChange={formInputHandler}
             />
-            {showPassword ? (
+            {togglePassword ? (
               <FaEye
                 className='absolute right-5 top-4 cursor-pointer'
-                onClick={() => setShowPassword((prev) => !prev)}
+                onClick={() => dispatch(showPassword())}
               />
             ) : (
               <FaEyeSlash
                 className='absolute right-5 top-4 cursor-pointer'
-                onClick={() => setShowPassword((prev) => !prev)}
+                onClick={() => dispatch(showPassword())}
               />
             )}
           </div>
