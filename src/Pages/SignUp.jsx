@@ -9,20 +9,14 @@ import {
   FaUnlockAlt,
 } from 'react-icons/fa';
 import { ReactComponent as Register } from '../assets/register.svg';
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  updateProfile,
-} from 'firebase/auth';
-import { setDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase.config';
-import { toast } from 'react-toastify';
 import { useSelector, useDispatch } from 'react-redux';
 import { showPassword } from '../store/uiSlice';
+import { createAccountHandler } from '../store/formAction';
 
 const SignUp = () => {
   const dispatch = useDispatch();
   const togglePassword = useSelector((state) => state.ui.showPassword);
+  const accountCreated = useSelector((state) => state.form.accCreated);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -34,7 +28,7 @@ const SignUp = () => {
 
   const navigate = useNavigate();
 
-  const formInputHandler = (e) => {
+  const formInputOnchange = (e) => {
     setFormData((prev) => ({
       ...prev,
       [e.target.id]: e.target.value,
@@ -44,34 +38,18 @@ const SignUp = () => {
   const formHandler = async (e) => {
     e.preventDefault();
 
-    try {
-      const auth = getAuth();
-      const userCredentials = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredentials.user;
-
-      updateProfile(auth.currentUser, {
-        displayName: name,
-      });
-
-      const dataCopy = { ...formData };
-      delete dataCopy.password;
-      dataCopy.timestamp = serverTimestamp();
-
-      // add the data to firestore
-      await setDoc(doc(db, 'users', user.uid), dataCopy);
-      navigate('/');
-      toast.success(
-        `Account Created Welcome ${userCredentials.user.displayName}`
-      );
-    } catch (error) {
-      console.log(error);
-      toast.error('Something went wrong');
-    }
+    dispatch(
+      createAccountHandler({
+        email: email,
+        password: password,
+        name: name,
+      })
+    );
   };
+
+  if (accountCreated) {
+    navigate('/');
+  }
 
   return (
     <>
@@ -97,7 +75,7 @@ const SignUp = () => {
               type='text'
               placeholder='Name'
               id='name'
-              onChange={formInputHandler}
+              onChange={formInputOnchange}
             />
           </div>
           <div className='flex items-center gap-4'>
@@ -107,7 +85,7 @@ const SignUp = () => {
               type='email'
               placeholder='Email'
               id='email'
-              onChange={formInputHandler}
+              onChange={formInputOnchange}
             />
           </div>
           <div className='relative flex items-center gap-4'>
@@ -117,7 +95,7 @@ const SignUp = () => {
               type={togglePassword ? 'text' : 'password'}
               placeholder='Password'
               id='password'
-              onChange={formInputHandler}
+              onChange={formInputOnchange}
             />
             {togglePassword ? (
               <FaEye

@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { db } from '../firebase.config';
 import { Navigation, Pagination, Scrollbar, A11y } from 'swiper';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
@@ -8,40 +7,24 @@ import 'swiper/css/bundle';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
-import { getDoc, doc } from 'firebase/firestore';
 import { FaArrowLeft, FaShareAlt } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import LoadingScreen from '../components/LoadingScreen';
 import { useSelector, useDispatch } from 'react-redux';
 import { shareCopied } from '../store/uiSlice';
+import { getSingleListing } from '../store/listingsAction';
 
 const SingleListing = () => {
   const dispatch = useDispatch();
   const linkCopied = useSelector((state) => state.ui.isCopied);
-
-  const [listing, setListing] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const listing = useSelector((state) => state.listing.listing);
+  const isLoading = useSelector((state) => state.listing.isLoadingListing);
 
   const params = useParams();
-  const isMounted = useRef(true);
 
   useEffect(() => {
-    if (isMounted) {
-      const fetchData = async () => {
-        setIsLoading(true);
-        const docRef = doc(db, 'listings', params.listingUID);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          setListing(docSnap.data());
-          setIsLoading(false);
-        }
-      };
-
-      fetchData();
-    }
-    isMounted.current = false;
-  }, [params.listingUID]);
+    dispatch(getSingleListing(params.listingUID));
+  }, [dispatch, params.listingUID]);
 
   const shareHandler = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -86,14 +69,13 @@ const SingleListing = () => {
                   Link Copied
                 </p>
               )}
-              <div
+
+              <Link
                 className='cursor-pointer absolute left-5 top-5 rounded-full bg-slate-900 opacity-50 hover:opacity-100 p-4'
-                onClick={shareHandler}
+                to='/'
               >
-                <Link to='/'>
-                  <FaArrowLeft className='text-white' />
-                </Link>
-              </div>
+                <FaArrowLeft className='text-white' />
+              </Link>
             </SwiperSlide>
           ))}
         </Swiper>

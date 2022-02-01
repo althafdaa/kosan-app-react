@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { FaEnvelope, FaCheckSquare } from 'react-icons/fa';
@@ -6,15 +6,21 @@ import { ReactComponent as ForgotPass } from '../assets/forget-password.svg';
 import { ReactComponent as ForgotPassSent } from '../assets/forget-password-sent.svg';
 import { useDispatch, useSelector } from 'react-redux';
 import { isSubmitted } from '../store/uiSlice';
+import { setEmail } from '../store/formSlice';
 
 const ForgotPassword = () => {
   const dispatch = useDispatch();
   const formSubmitted = useSelector((state) => state.ui.isSubmitted);
-  const [email, setEmail] = useState('');
+  const email = useSelector((state) => state.form.email);
+
   const auth = getAuth();
 
   const emailOnchange = (e) => {
-    setEmail(e.target.value);
+    dispatch(
+      setEmail({
+        email: e.target.value,
+      })
+    );
   };
 
   const emailSubmitHandler = async (e) => {

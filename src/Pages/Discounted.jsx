@@ -1,49 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import {
-  collection,
-  getDocs,
-  where,
-  orderBy,
-  query,
-  limit,
-} from 'firebase/firestore';
-import { db } from '../firebase.config';
+import React, { useEffect } from 'react';
+
 import ListingItem from '../components/ListingItem';
+import { useDispatch, useSelector } from 'react-redux';
+import { getDiscountedListing } from '../store/listingsAction';
 
 const Discounted = () => {
-  const [listings, setListings] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useDispatch();
+  const isLoading = useSelector((state) => state.listing.isLoadingDiscounted);
+  const listings = useSelector((state) => state.listing.discounted);
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const listingsRef = collection(db, 'listings');
-        const q = query(
-          listingsRef,
-          where('offer', '==', true),
-          orderBy('timestamp', 'desc', limit(10))
-        );
-
-        const querySnap = await getDocs(q);
-
-        const getListings = [];
-
-        querySnap.forEach((data) => {
-          return getListings.push({
-            id: data.id,
-            data: data.data(),
-          });
-        });
-
-        setListings(getListings);
-        setIsLoading(false);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    fetch();
-  }, []);
+    dispatch(getDiscountedListing());
+  }, [dispatch]);
 
   return (
     <div className='px-6 py-4 grid gap-4'>
