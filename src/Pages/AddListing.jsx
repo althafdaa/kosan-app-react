@@ -205,7 +205,7 @@ const AddListing = () => {
             </button>
             <button
               className={`rounded-lg text-black border-2 shadow-xs px-4 py-2  font-semibold hover:bg-green-600 hover:text-green-50 ${
-                formData.type === 'apart' && 'form-clicked'
+                formData.type === 'apartement' && 'form-clicked'
               }`}
               value='apartement'
               id='type'
