@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 
 import { addListingHandler } from '../store/addListingAction';
 import { useSelector, useDispatch } from 'react-redux';
-import { addListingLoading } from '../store/addListingSlice';
+import { addListingLoading, addSucceed } from '../store/addListingSlice';
 
 const AddListing = () => {
   const dispatch = useDispatch();
@@ -49,7 +49,6 @@ const AddListing = () => {
 
   const formHandler = (e) => {
     e.preventDefault();
-
     // jika targetnya file
     if (e.target.files) {
       setFormData((prev) => ({
@@ -57,7 +56,6 @@ const AddListing = () => {
         images: e.target.files,
       }));
     }
-
     if (!e.target.files) {
       if (e.target.value === 'true') {
         setFormData((prev) => ({
@@ -105,6 +103,7 @@ const AddListing = () => {
 
   if (isAdded) {
     navigate(`/type/${formData.type}/${uuid}`);
+    dispatch(addSucceed(null));
   }
 
   return (
@@ -328,7 +327,6 @@ const AddListing = () => {
               <p>Rp</p>
               <input
                 className='rounded-md p-2 border-2 outline-2 focus:outline-green-600'
-                defaultValue='0'
                 type='number'
                 id='normalPrice'
                 value={formData.normalPrice}
@@ -348,7 +346,6 @@ const AddListing = () => {
                 <p>Rp</p>
                 <input
                   className='rounded-md p-2 border-2 outline-2 focus:outline-green-600'
-                  defaultValue='0'
                   type='number'
                   id='discountedPrice'
                   value={formData.discountedPrice}

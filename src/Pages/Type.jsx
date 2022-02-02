@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import ListingItem from '../components/ListingItem';
 import { useDispatch, useSelector } from 'react-redux';

@@ -1,4 +1,4 @@
-import { configureStore, getDefaultMiddleware } from '@reduxjs/toolkit';
+import { configureStore } from '@reduxjs/toolkit';
 import addListingSlice from './addListingSlice';
 import formSlice from './formSlice';
 import listingSlice from './listingSlice';

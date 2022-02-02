@@ -3,32 +3,16 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaBell } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from 'firebase/storage';
-import { serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
+
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase.config';
-import { v4 as uuidv4 } from 'uuid';
 import LoadingScreen from '../components/LoadingScreen';
+import { useDispatch, useSelector } from 'react-redux';
+import { editListingHandler } from '../store/addListingAction';
+import { isEdited } from '../store/addListingSlice';
 
 const EditListing = () => {
-  const [formData, setFormData] = useState({
-    bathrooms: false,
-    discountedPrice: 0,
-    furnished: false,
-    images: {},
-    location: '',
-    name: '',
-    normalPrice: 0,
-    offer: true,
-    lat: 0,
-    long: 0,
-    type: 'kosan',
-    parking: true,
-  });
+  const [formData, setFormData] = useState({});
   const [editingListing, setEditingListing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -36,6 +20,11 @@ const EditListing = () => {
   const navigate = useNavigate();
   const isMounted = useRef(true);
   const params = useParams();
+
+  const dispatch = useDispatch();
+  const editted = useSelector((state) => state.add.isEdited);
+
+  console.log(isLoading);
 
   // fetch based on UID for UPDATE/EDIT
   useEffect(() => {
@@ -57,7 +46,7 @@ const EditListing = () => {
       }
     };
     fetchEdit();
-  }, [navigate, params.listingUID]);
+  }, [params.listingUID, dispatch]);
 
   // authenticantion
   useEffect(() => {
@@ -84,7 +73,6 @@ const EditListing = () => {
         images: e.target.files,
       }));
     }
-
     if (!e.target.files) {
       if (e.target.value === 'true') {
         setFormData((prev) => ({
@@ -122,77 +110,23 @@ const EditListing = () => {
       return;
     }
 
-    // UPLOADING IMAGE START
-    const storeImage = async (img) => {
-      return new Promise((resolve, reject) => {
-        const storage = getStorage();
-        const fileName = `${auth.currentUser.uid}-${img.name}-${uuidv4()}`;
-
-        const storageRef = ref(storage, 'images/' + fileName);
-
-        const uploadTask = uploadBytesResumable(storageRef, img);
-
-        uploadTask.on(
-          'state_changed',
-          (snapshot) => {
-            const progress =
-              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log(`Upload is ${progress}% done`);
-            switch (snapshot.state) {
-              case 'paused':
-                console.log('Upload is paused');
-                break;
-              case 'running':
-                console.log('Upload is running');
-                break;
-              default:
-                break;
-            }
-          },
-          (error) => {
-            reject(error);
-          },
-          () => {
-            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-              resolve(downloadURL);
-            });
-          }
-        );
-      });
-    };
-
-    const imageUrls = await Promise.all(
-      [...formData.images].map((image) => storeImage(image))
-    ).catch(() => {
-      setIsLoading(false);
-      toast.error('Uploading image failed');
-      return;
-    });
-    // UPLOADING IMAGE END
-
-    // geolocation.lat = formData.lat;
-    // geolocation.long = formData.long;
-
-    // COPYING STATE || FINAL STATE
-    const formDataCopy = {
-      ...formData,
-      imageUrls,
-      timestamp: serverTimestamp(),
-    };
-
-    // CLEANING UP DATA
-    delete formDataCopy.images;
-
-    // UPDATEIN TO FIRESTORE
-    const docRef = doc(db, 'listings', params.listingUID);
-    await updateDoc(docRef, formDataCopy);
-    toast.success('Iklan berhasil disimpan!');
-    navigate(`/type/${formDataCopy.type}/${docRef.id}`);
+    dispatch(
+      editListingHandler({
+        ...formData,
+        params: params,
+      })
+    );
   };
+
+  if (editted) {
+    navigate(`/type/${formData.type}/${params.listingUID}`);
+    dispatch(isEdited(null));
+  }
 
   if (isLoading) {
     return <LoadingScreen />;
   }
+
   return (
     <div className='py-6 px-4 flex flex-col gap-4 mb-34'>
       <header>
@@ -217,7 +151,7 @@ const EditListing = () => {
               className={`rounded-lg text-black border-2 shadow-xs px-8 py-2 font-semibold hover:bg-green-600 hover:text-green-50 ${
                 formData.type === 'kosan' && 'form-clicked'
               }`}
-              value={formData.type}
+              value='kosan'
               id='type'
               type='button'
               onClick={formHandler}
@@ -229,7 +163,7 @@ const EditListing = () => {
               className={`rounded-lg text-black border-2 shadow-xs px-4 py-2  font-semibold hover:bg-green-600 hover:text-green-50 ${
                 formData.type === 'apartement' && 'form-clicked'
               }`}
-              value={formData.type}
+              value='apartement'
               id='type'
               type='button'
               onClick={formHandler}
@@ -340,7 +274,6 @@ const EditListing = () => {
               </label>
               <input
                 className='rounded-md p-2 border-2 outline-2 focus:outline-green-600 '
-                defaultValue='0'
                 type='number'
                 id='lat'
                 value={formData.geolocation.lat}
@@ -355,7 +288,6 @@ const EditListing = () => {
               </label>
               <input
                 className='rounded-md p-2 border-2 outline-2 focus:outline-green-600 '
-                defaultValue='0'
                 type='number'
                 id='long'
                 value={formData.geolocation.long}
@@ -413,7 +345,6 @@ const EditListing = () => {
               <p>Rp</p>
               <input
                 className='rounded-md p-2 border-2 outline-2 focus:outline-green-600'
-                defaultValue='0'
                 type='number'
                 id='normalPrice'
                 value={formData.normalPrice}
@@ -433,7 +364,6 @@ const EditListing = () => {
                 <p>Rp</p>
                 <input
                   className='rounded-md p-2 border-2 outline-2 focus:outline-green-600'
-                  defaultValue='0'
                   type='number'
                   id='discountedPrice'
                   value={formData.discountedPrice}

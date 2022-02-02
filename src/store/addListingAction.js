@@ -7,13 +7,18 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { getAuth } from 'firebase/auth';
 import { toast } from 'react-toastify';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import {
+  addDoc,
+  collection,
+  doc,
+  serverTimestamp,
+  updateDoc,
+} from 'firebase/firestore';
 import { db } from '../firebase.config';
-import { addListingLoading, listingAdded } from './addListingSlice';
+import { addListingLoading, isEdited, listingAdded } from './addListingSlice';
 
 export const addListingHandler = (data) => {
   const { images, lat, long } = data;
-  console.log(data);
   const auth = getAuth();
   return async (dispatch) => {
     let geolocation = {};
@@ -93,6 +98,76 @@ export const addListingHandler = (data) => {
         })
       );
     }
-    toast.success('Listing saved');
+    toast.success('Iklan berhasil diposting!');
+  };
+};
+
+export const editListingHandler = (data) => {
+  const auth = getAuth();
+
+  return async (dispatch) => {
+    // UPLOADING IMAGE START
+    const storeImage = async (img) => {
+      return new Promise((resolve, reject) => {
+        const storage = getStorage();
+        const fileName = `${auth.currentUser.uid}-${img.name}-${uuidv4()}`;
+
+        const storageRef = ref(storage, 'images/' + fileName);
+
+        const uploadTask = uploadBytesResumable(storageRef, img);
+
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress =
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log(`Upload is ${progress}% done`);
+            switch (snapshot.state) {
+              case 'paused':
+                console.log('Upload is paused');
+                break;
+              case 'running':
+                console.log('Upload is running');
+                break;
+              default:
+                break;
+            }
+          },
+          (error) => {
+            reject(error);
+          },
+          () => {
+            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+              resolve(downloadURL);
+            });
+          }
+        );
+      });
+    };
+
+    const imageUrls = await Promise.all(
+      [...data.images].map((image) => storeImage(image))
+    ).catch(() => {
+      toast.error('Uploading image failed');
+      return;
+    });
+    // UPLOADING IMAGE END
+
+    // COPYING STATE || FINAL STATE
+    const formDataCopy = {
+      ...data,
+      imageUrls,
+      timestamp: serverTimestamp(),
+    };
+
+    // CLEANING UP DATA
+    delete formDataCopy.images;
+    delete formDataCopy.params;
+
+    // UPDATEIN TO FIRESTORE
+    const docRef = doc(db, 'listings', data.params.listingUID);
+    await updateDoc(docRef, formDataCopy);
+    dispatch(isEdited(true));
+    toast.success('Iklan berhasil disimpan!');
   };
 };

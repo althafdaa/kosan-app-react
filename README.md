@@ -1,6 +1,8 @@
 # Overview Kosan App
 
-Fully functioned and interactive Fullstack Web Application to start your property business, heavily inspired by Mamikos. This is my first big fullstack application building from scratch
+Fully functioned and interactive Fullstack Web Application to start your property business, heavily inspired by Mamikos. This is my first big fullstack application building from scratch. You can create an account with email or google account also see, create, update, and delete listing. Try it out!
+
+Deployed Website: [https://kosan-app.netlify.app/](https://kosan-app.netlify.app/)
 
 ## How to install
 
@@ -57,16 +59,17 @@ Install the node_modules first
 ### Built With
 
 - React JS
-- Tailwind CSS
 - React Router
+- Redux
 - React Leaflet
 - Swiper JS
+- Tailwind CSS
 - Firebase, Firestore, Firebase Authentication, Firebase Storage
 
 ### What I Learned
 
-A lot. Truly. Almost 95% of my component was styled with only tailwindCSS, fully maximizing the superb utillity classes! Feels like my learning process is never enough and i just keep learning a lot of new things and on this project it was about firebase
+Learned a lot about tailwind since i ditched daisyUI and fully created my component one by one. Learned a lot about Firebase 9 and everything inside of it (Firestore, Storage, Authentication, upload Image handling). Finally my first project with Redux! it took a while to implement but i can see why people on the industry using this. It makes the application scalable
 
 ## Continued Development
 
-Will deploy the project later
+None
