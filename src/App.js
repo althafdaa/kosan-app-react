@@ -26,8 +26,8 @@ function App() {
           <Route path='/profile' element={<PrivateRoute />}>
             <Route path='/profile' element={<Profile />} />
           </Route>
-          <Route path='/add-listing' element={<PrivateRoute />}>
-            <Route path='/add-listing' element={<AddListing />} />
+          <Route path='/profile/add-listing' element={<PrivateRoute />}>
+            <Route path='/profile/add-listing' element={<AddListing />} />
           </Route>
           <Route path='/sign-in' element={<SignIn />} />
           <Route path='/sign-up' element={<SignUp />} />
